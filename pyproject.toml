@@ -1,0 +1,98 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "erddapper"
+version = "0.0.1"
+description = "A dapper dataset manager for ERDDAP."
+authors = [
+    {name = "Honza Rychly", email="honza.rychly@tetratech.com"},
+]
+readme = {file = "README.md", content-type="text/markdown"}
+license = {file = "LICENSE"}
+requires-python = ">=3.13,<3.14"
+keywords = ["erddapper"]
+
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13"
+]
+
+[project.urls]
+
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "isort",
+    "flake8",
+    "pre-commit",
+    "types-setuptools",
+    "mypy",
+    "bump-my-version",
+]
+
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = false
+ignore-magic = false
+ignore-semiprivate = true
+ignore-private = true
+ignore-property-decorators = true
+ignore-module = false
+fail-under = 95
+exclude = ["setup.py", "docs", "tests"]
+verbose = 1
+quiet = false
+color = true
+
+[tool.isort]
+profile = "black"
+skip_glob = ["docs/*", "docs/**/*.py"]
+known_third_party = ["dotenv", "pydash", "requests"]
+line_length = 90
+multi_line_output = 3
+lines_after_imports = 2
+lines_between_types = 1
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-v"
+# only test the root level, otherwise it picks up the tests of the project template
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+omit = [
+    "setup.py",
+    "erddapper/_version.py",
+    "erddapper/version.py",
+    "tests/*",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+erddapper = "erddapper"
+
+[tool.bumpversion]
+current_version = "0.0.1"
+commit = true
+tag = true
+
+[[tool.bumpversion.files]]
+filename = "erddapper/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+

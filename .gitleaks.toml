@@ -1,0 +1,13 @@
+title = "Custom Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[rules]]
+# Inspired by http://git.axiom/axiom/packrat/-/blob/dev/packrat/platforms/atn/wildlife_computers/utils.py#L16-17 example
+# which is failed to be found by default rules
+id = "byte-like-secret"
+description = "Detect secret wrapped in byte string"
+regex = '''b['"](.*)['"]'''
+secretGroup = 1
+entropy = 3.5
