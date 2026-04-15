@@ -64,4 +64,3 @@ test-all: ## run tests on every Python version with tox
 coverage: ## check code coverage quickly with the default Python
     pytest --cov=./ --cov-report html:cov_html -sv
     $(BROWSER) ./cov_html/index.html
-

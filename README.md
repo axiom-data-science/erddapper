@@ -2,6 +2,8 @@
 
 A dapper dataset manager for ERDDAP.
 
+Currently, in a very prototypy state.
+
 Copyright 2026 Axiom Data Science, LLC
 
 See LICENSE for details.
@@ -52,7 +54,29 @@ uv run pytest -sv --integration
 
 ## Usage
 
+The service is built using `fastapi` and exposes a `/docs` endpoint. You can find
+a more complete list of available endpoint there.
+
+Datasets get added and updated by a `POST` request at `/datasets/{UUID}`.
+The request payload is expected to contain an object with URLs from which
+metadata and data for the dataset can be obtained.
+It downloads the data to a configured directory, builds a `datasets.xml`,
+and sends a dataset reload request to ERDDAP.
+
 ## Configuration
+
+Configuration is provided via environment variables (prefixed with `ERDDAPPER_`) or a `.env` file in the project root. Copy `.env.example` to `.env` and adjust as needed.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `ERDDAPPER_ERDDAP_BASE_URL` | ✅ | — | Base URL of the ERDDAP instance, e.g. `http://localhost:8080/erddap`. |
+| `ERDDAPPER_ERDDAP_FLAG_KEY_KEY` | ✅ | — | Key used to trigger ERDDAP flag reloads. |
+| `ERDDAPPER_DATASET_ELEMENTS_DIR` | ❌ | `datasets/elements` | Directory where generated ERDDAP XML dataset elements are stored. |
+| `ERDDAPPER_DATASET_DATA_DIR` | ❌ | `datasets/data` | Directory where downloaded dataset data files are stored. |
+| `ERDDAPPER_DATASETS_XML_PATH` | ❌ | `datasets/datasets.xml` | Path to the generated `datasets.xml` config file. |
+| `ERDDAPPER_ERDDAP_DATASETS_PATH` | ❌ | `/mnt/datasets/data` | Path to the datasets' data directory inside the ERDDAP container. |
+| `ERDDAPPER_DATASET_RELOAD_FREQ_MIN` | ❌ | `1440` | How often ERDDAP should reload datasets, in minutes. |
+
 
 ## Building with Docker
 

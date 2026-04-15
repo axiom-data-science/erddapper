@@ -12,6 +12,13 @@ authors = [
 readme = {file = "README.md", content-type="text/markdown"}
 license = {file = "LICENSE"}
 requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.135",
+    "uvicorn[standard]>=0.44",
+    "httpx>=0.28",
+    "pydantic-settings>=2.7",
+    "lxml>=6,<7",
+]
 keywords = ["erddapper"]
 
 classifiers = [
@@ -25,6 +32,7 @@ classifiers = [
 [project.urls]
 
 
+
 [dependency-groups]
 dev = [
     "pytest",
@@ -35,6 +43,7 @@ dev = [
     "types-setuptools",
     "mypy",
     "bump-my-version",
+    "lxml-stubs",
 ]
 
 
@@ -55,7 +64,7 @@ color = true
 [tool.isort]
 profile = "black"
 skip_glob = ["docs/*", "docs/**/*.py"]
-known_third_party = ["dotenv", "pydash", "requests"]
+known_third_party = ["fastapi", "httpx", "lxml", "pydantic", "pydantic_core", "pydantic_settings", "pytest"]
 line_length = 90
 multi_line_output = 3
 lines_after_imports = 2
@@ -95,4 +104,3 @@ tag = true
 filename = "erddapper/__init__.py"
 search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
-

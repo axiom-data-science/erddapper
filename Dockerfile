@@ -8,8 +8,14 @@ ENV PROJECT_ROOT=/opt/erddapper
 
 WORKDIR $PROJECT_ROOT/
 
-COPY pyproject.toml README.md LICENSE conftest.py ./
-COPY erddapper $PROJECT_ROOT/erddapper
-COPY tests $PROJECT_ROOT/tests
+# Install dependencies first for better layer caching
+COPY pyproject.toml uv.lock README.md LICENSE ./
+RUN uv sync --no-dev --frozen --no-install-project
 
-RUN uv sync --no-dev
+# Copy source and install the project
+COPY erddapper $PROJECT_ROOT/erddapper
+RUN uv sync --no-dev --frozen
+
+ENV PATH="$PROJECT_ROOT/.venv/bin:$PATH"
+
+CMD ["uvicorn", "erddapper.main:app", "--host", "0.0.0.0", "--port", "8000"]
