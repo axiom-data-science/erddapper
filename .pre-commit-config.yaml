@@ -1,11 +1,9 @@
 repos:
 
 - repo: https://github.com/econchick/interrogate
-  rev: 1.5.0
+  rev: 1.7.0
   hooks:
     - id: interrogate
-      # https://github.com/pre-commit/pre-commit/issues/2122
-      additional_dependencies: [setuptools]
       exclude: ^(docs|setup.py|tests)
       args: [--config=pyproject.toml]
 
@@ -60,7 +58,7 @@ repos:
     args: [--ignore-missing-imports]
 
 - repo: https://github.com/gitleaks/gitleaks
-  rev: v8.23.3
+  rev: v8.30.1
   hooks:
     - id: gitleaks
 
