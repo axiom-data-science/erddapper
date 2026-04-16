@@ -48,23 +48,25 @@ PYTHON_TYPE_MAPPING = {
 # TODO: estabilish a better source for these required attributes:
 # - variables ioos_category, required variables: station, lon, lat
 def generate_dataset_xml(
-    dataset_id: UUID, metadata: dict, variables: Iterable[dict]
+    uuid: UUID,
+    metadata: dict,
+    variables: Iterable[dict],
+    dataset_id: str,
 ) -> str:
     """Build an ERDDAP dataset XML dataset element from metadata."""
-    assert "id" in metadata, "Asset metadata must contain 'id'"
     dataset = Element(
         "dataset",
         attrib={
             # Only worry about CSV file for now
             "type": "EDDTableFromAsciiFiles",
-            "datasetID": metadata["id"],
+            "datasetID": dataset_id,
         },
     )
     create_subelement(
         dataset, "reloadEveryNMinutes", str(SETTINGS.dataset_reload_freq_min)
     )
     create_subelement(dataset, "fileDir", str(SETTINGS.erddap_datasets_path))
-    create_subelement(dataset, "fileNameRegex", f"{dataset_id}.*")
+    create_subelement(dataset, "fileNameRegex", f"{uuid}.*")
 
     # TODO: only add, don't overwrite
     metadata.update(ADDITIONAL_ATTRS)

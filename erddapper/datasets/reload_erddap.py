@@ -3,8 +3,6 @@
 import hashlib
 import logging
 
-from uuid import UUID
-
 import httpx
 
 from pydantic import HttpUrl
@@ -15,7 +13,7 @@ from erddapper.config import SETTINGS
 logger = logging.getLogger("erddapper")
 
 
-def erddap_flag_key(erddap_base_url: HttpUrl, flag_key_key: str, dataset_id: str | UUID):
+def erddap_flag_key(erddap_base_url: HttpUrl, flag_key_key: str, dataset_id: str):
     """Compute the ERDDAP flag key hash for the given dataset."""
     # This needs to match how ERDDAP's base https url is configured
     prefered_base_url = str(erddap_base_url).replace("http://", "https://")
@@ -23,7 +21,7 @@ def erddap_flag_key(erddap_base_url: HttpUrl, flag_key_key: str, dataset_id: str
     return hashlib.sha256(str.encode(phrase)).hexdigest()
 
 
-async def request_dataset_reload(dataset_id: str | UUID):
+async def request_dataset_reload(dataset_id: str):
     """Request ERDDAP dataset reload by setting a flag file."""
     flag_key = erddap_flag_key(
         SETTINGS.erddap_base_url, SETTINGS.erddap_flag_key_key, dataset_id
