@@ -11,6 +11,7 @@ from erddapper.config import SETTINGS
 # MIME type to file extension map
 CONTENT_TYPE_MAP = {
     "application/x-hdf5": "nc",
+    "application/x-netcdf": "nc",
     "text/plain": "csv",  # *likely csv
 }
 
