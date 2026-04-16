@@ -18,8 +18,8 @@ from erddapper.store import save_dataset_element
 logger = logging.getLogger("erddapper")
 
 
-async def update_dataset(uuid: UUID, request: DatasetCreate):
-    """Create or update dataset element"""
+async def update_dataset(uuid: UUID, request: DatasetCreate) -> str:
+    """Create or update dataset element and return its ERDDAP dataset ID."""
     acdd_meta = await get_acdd_metadata(request.acdd_metadata)
 
     assert "id" in acdd_meta, "Asset metadata must contain 'id'"
@@ -47,3 +47,5 @@ async def update_dataset(uuid: UUID, request: DatasetCreate):
 
     compose_datasets_xml()
     await request_dataset_reload(dataset_id)
+
+    return dataset_id

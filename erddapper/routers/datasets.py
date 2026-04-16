@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 
 import erddapper.datasets as handlers
 
-from erddapper.models import DatasetCreate
+from erddapper.models import DatasetCreate, DatasetCreateResponse
 from erddapper.store import (
     dataset_element_exists,
     list_dataset_element_ids,
@@ -23,10 +23,14 @@ async def list_datasets() -> list[UUID]:
     return list_dataset_element_ids()
 
 
-@router.post("/{dataset_id}", status_code=201)
-async def create_dataset(dataset_id: UUID, body: DatasetCreate):
+@router.post("/{dataset_id}", status_code=200)
+async def create_dataset(dataset_id: UUID, body: DatasetCreate) -> DatasetCreateResponse:
     """Create a new dataset or update existing one using metadata from provided URLs."""
-    await handlers.update_dataset(dataset_id, body)
+    erddap_id = await handlers.update_dataset(dataset_id, body)
+    return DatasetCreateResponse(
+        uuid=dataset_id,
+        erddap_dataset_id=erddap_id,
+    )
 
 
 @router.get("/{dataset_id}")
