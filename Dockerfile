@@ -18,4 +18,4 @@ RUN uv sync --no-dev --frozen
 
 ENV PATH="$PROJECT_ROOT/.venv/bin:$PATH"
 
-CMD ["uvicorn", "erddapper.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "erddapper.main:app", "--host", "0.0.0.0", "--port", "8080"]
