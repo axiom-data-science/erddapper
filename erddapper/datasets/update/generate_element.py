@@ -10,6 +10,7 @@ from lxml.etree import tostring as xml_to_string
 
 from erddapper.config import SETTINGS
 from erddapper.utils.xml import (
+    ElementT,
     add_attribute,
     create_subelement,
     create_variable_subelement,
@@ -35,12 +36,52 @@ ADDITIONAL_ATTRS = {
     "cdm_timeseries_variables": "longitude,latitude,station",
     "featureType": "timeSeries",
 }
+ALLOWED_VAR_ATTRS = [
+    "time_format",
+    "ioos_category",
+    "cf_role",
+    "units",
+    "standard_name",
+    "axis",
+]
 
 PYTHON_TYPE_MAPPING = {
     # String is the default
     "int": "int",
     "float": "double",
 }
+
+
+def add_variable_xml(dataset_xml: ElementT, var: dict):
+    """Add variable element with its attributes."""
+    if "cell_header" not in var:
+        logger.warning(f"Ignoring an unidentified variable: {var}")
+        return
+
+    var_xml = create_variable_subelement(
+        dataset_xml,
+        var["cell_header"],
+        var.get("cell_parameter", var["cell_header"]),
+        "String"
+        if var["cell_header"] == "dateTime"
+        else "double",  # TODO: add this to the front end forms
+    )
+
+    var_attrs_xml = create_subelement(var_xml, "addAttributes")
+    var_attrs = {k: v for k, v in var.items() if k in ALLOWED_VAR_ATTRS}
+    # Fill in anything not present
+    if "ioos_category" not in var_attrs:
+        var_attrs["ioos_category"] = "Unknown"
+    if var["cell_parameter"] == "station" and "cf_role" not in var_attrs:
+        var_attrs["cf_role"] = "timeseries_id"
+    if var.get("time_format"):
+        if "units" not in var_attrs:
+            var_attrs["units"] = var_attrs["time_format"]
+        var_attrs["standard_name"] = "time"
+        var_attrs["axis"] = "T"
+    # Create the XML attributes
+    for attr_name, attr_val in var_attrs.items():
+        add_attribute(var_attrs_xml, attr_name, attr_val)
 
 
 # TODO: add validation
@@ -103,26 +144,7 @@ def generate_dataset_xml(
     )
 
     for var in variables:
-        if "cell_header" not in var:
-            logger.warning(f"Ignoring an unidentified variable: {var}")
-            continue
-        var_elem = create_variable_subelement(
-            dataset,
-            var["cell_header"],
-            var.get("cell_parameter", var["cell_header"]),
-            "String"
-            if var["cell_header"] == "dateTime"
-            else "double",  # TODO: add this to the front end forms
-        )
-        var_attrs = create_subelement(var_elem, "addAttributes")
-        add_attribute(var_attrs, "ioos_category", "Unknown")
-        if var["cell_parameter"] == "station":
-            add_attribute(var_attrs, "cf_role", "timeseries_id")
-        if "time" in var["cell_header"].lower() or var["cell_header"] == "t":
-            add_attribute(var_attrs, "units", "yyyy-MM-dd'T'HH:mm:ss'Z'")
-            add_attribute(var_attrs, "time_format", "yyyy-MM-dd'T'HH:mm:ss'Z'")
-            add_attribute(var_attrs, "standard_name", "time")
-            add_attribute(var_attrs, "axis", "T")
+        add_variable_xml(dataset, var)
 
     # FIXME: temporarily add placeholders so that all the required stuff present
     for name in REQUIRED_ATTRS:
