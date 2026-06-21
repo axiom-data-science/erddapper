@@ -126,7 +126,7 @@ def generate_dataset_xml(
     variables = list(variables)
     variables.append(
         {
-            "cell_header": f"={metadata['id']}",
+            "cell_header": f'="{metadata["id"]}"',
             "cell_parameter": "station",
         }
     )
