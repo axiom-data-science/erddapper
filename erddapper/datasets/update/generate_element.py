@@ -128,18 +128,21 @@ def generate_dataset_xml(
         {
             "cell_header": f'="{metadata["id"]}"',
             "cell_parameter": "station",
+            "data_type": "String",
         }
     )
     variables.append(
         {
             "cell_header": "=0.0",
             "cell_parameter": "longitude",
+            "data_type": "double",
         }
     )
     variables.append(
         {
             "cell_header": "=0.00",
             "cell_parameter": "latitude",
+            "data_type": "double",
         }
     )
 
