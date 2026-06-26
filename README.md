@@ -67,10 +67,15 @@ and sends a dataset reload request to ERDDAP.
 
 Configuration is provided via environment variables (prefixed with `ERDDAPPER_`) or a `.env` file in the project root. Copy `.env.example` to `.env` and adjust as needed.
 
+Dataset creation uses pluggable **dataset sources**. Each source defines how request
+payload should be interpreted and where metadata comes from. Sources are implemented
+in `erddapper.metadata.sources` and configured as `module_name:ClassName`.
+
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `ERDDAPPER_ERDDAP_BASE_URL` | ✅ | — | Base URL of the ERDDAP instance, e.g. `http://localhost:8080/erddap`. |
 | `ERDDAPPER_ERDDAP_FLAG_KEY_KEY` | ✅ | — | Key used to trigger ERDDAP flag reloads. |
+| `ERDDAPPER_ENABLED_SOURCES` | ❌ | `inline:InlineSource` | Comma-separated list of enabled dataset source classes from `erddapper.metadata.sources` (format: `module:Class`). Example: `inline:InlineSource,asset_manager:AssetManagerSource`. |
 | `ERDDAPPER_DATASET_ELEMENTS_DIR` | ❌ | `datasets/elements` | Directory where generated ERDDAP XML dataset elements are stored. |
 | `ERDDAPPER_DATASET_DATA_DIR` | ❌ | `datasets/data` | Directory where downloaded dataset data files are stored. |
 | `ERDDAPPER_DATASETS_XML_PATH` | ❌ | `datasets/datasets.xml` | Path to the generated `datasets.xml` config file. |

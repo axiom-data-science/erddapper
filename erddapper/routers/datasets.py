@@ -6,7 +6,8 @@ from fastapi import APIRouter, HTTPException
 
 import erddapper.datasets as handlers
 
-from erddapper.models import DatasetCreate, DatasetCreateResponse
+from erddapper.metadata import CreateDatasetModelUnion, enabled_sources
+from erddapper.models import DatasetCreateResponse
 from erddapper.store import (
     dataset_element_exists,
     list_dataset_element_ids,
@@ -24,9 +25,14 @@ async def list_datasets() -> list[UUID]:
 
 
 @router.post("/{dataset_id}", status_code=200)
-async def create_dataset(dataset_id: UUID, body: DatasetCreate) -> DatasetCreateResponse:
-    """Create a new dataset or update existing one using metadata from provided URLs."""
-    erddap_id = await handlers.update_dataset(dataset_id, body)
+async def create_dataset(
+    dataset_id: UUID, body: CreateDatasetModelUnion
+) -> DatasetCreateResponse:
+    """Create or update dataset using metadata from one of configured sources."""
+    # Run-time pydantic model ensures source_name is an existing enabled one
+    source = enabled_sources[body.source_name]
+    global_attrs, variables = await source.get_metadata(body)
+    erddap_id = await handlers.update_dataset(dataset_id, global_attrs, variables)
     return DatasetCreateResponse(
         uuid=dataset_id,
         erddap_dataset_id=erddap_id,

@@ -1,11 +1,11 @@
 """Application configuration via pydantic-settings."""
 
 from pathlib import Path
-from typing import Self
+from typing import Annotated, Self
 
-from pydantic import HttpUrl
+from pydantic import HttpUrl, field_validator
 from pydantic_core import core_schema
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 DUMMY_UUID = "fb40e19d-92d4-4995-b83c-854ccecfe40c"
@@ -51,6 +51,15 @@ class Settings(BaseSettings):
     erddap_base_url: HttpUrl
     erddap_flag_key_key: str
     dataset_reload_freq_min: int = 1440
+
+    enabled_sources: Annotated[list[str], NoDecode] = ["inline:InlineSource"]
+
+    @field_validator("enabled_sources", mode="before")
+    @classmethod
+    def parse_source_list(cls, v):
+        if not isinstance(v, str):
+            return v
+        return [s.strip() for s in v.split(",") if s.strip()]
 
 
 SETTINGS = Settings()
