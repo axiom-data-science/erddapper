@@ -25,11 +25,11 @@ def create_subelement(
 
 
 def add_attribute(
-    parent: ElementT, name: str, value: Optional[str], type: Optional[str] = None
+    parent: ElementT, name: str, value: Optional[str], data_type: Optional[str] = None
 ) -> ElementT:
     """Add an attribute to an element."""
-    if type is not None:
-        return create_subelement(parent, "att", value, name=name, type=type)
+    if data_type is not None:
+        return create_subelement(parent, "att", value, name=name, type=data_type)
     return create_subelement(parent, "att", value, name=name)
 
 
