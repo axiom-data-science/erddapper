@@ -8,8 +8,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from erddapper import __version__
+from erddapper.datasets import (
+    compose_datasets_xml,
+    init_dataset_data_dir,
+    init_datasets_xml_dir,
+)
 from erddapper.log import setup_logging
 from erddapper.routers import main_router
+from erddapper.store import init_store
 
 
 logger = logging.getLogger("erddapper")
@@ -20,6 +26,10 @@ async def lifespan(app: FastAPI):
     """Service lifespan context manager."""
     setup_logging()
     logger.debug("Logging configured")
+    init_store()
+    compose_datasets_xml()
+    init_datasets_xml_dir()
+    init_dataset_data_dir()
     yield
 
 
