@@ -1,13 +1,13 @@
 """Datasets router."""
 
-from uuid import UUID
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Path
 
 import erddapper.datasets as handlers
 
 from erddapper.metadata import CreateDatasetModelUnion, enabled_sources
-from erddapper.models import DatasetCreateResponse
+from erddapper.models import DATASET_SLUG_REGEX, DatasetCreateResponse
 from erddapper.store import (
     dataset_element_exists,
     list_dataset_element_ids,
@@ -18,39 +18,47 @@ from erddapper.store import (
 router = APIRouter(prefix="/datasets", tags=["datasets"])
 
 
-@router.get("", response_model=list[UUID])
-async def list_datasets() -> list[UUID]:
+@router.get("", response_model=list[str])
+async def list_datasets() -> list[str]:
     """Return all datasets."""
     return list_dataset_element_ids()
 
 
-@router.post("/{dataset_id}", status_code=200)
+@router.post("/{slug}", status_code=200)
 async def create_dataset(
-    dataset_id: UUID, body: CreateDatasetModelUnion
+    slug: Annotated[str, Path(pattern=DATASET_SLUG_REGEX)], body: CreateDatasetModelUnion
 ) -> DatasetCreateResponse:
     """Create or update dataset using metadata from one of configured sources."""
     # Run-time pydantic model ensures source_name is an existing enabled one
     source = enabled_sources[body.source_name]
-    global_attrs, variables = await source.get_metadata(body)
-    erddap_id = await handlers.update_dataset(dataset_id, global_attrs, variables)
+    (
+        file_type,
+        global_attrs,
+        variables,
+        dataset_config,
+        sample_file,
+    ) = await source.get_metadata(body)
+    erddap_id = await handlers.update_dataset(
+        slug, file_type, global_attrs, variables, dataset_config, sample_file
+    )
     return DatasetCreateResponse(
-        uuid=dataset_id,
+        slug=slug,
         erddap_dataset_id=erddap_id,
     )
 
 
-@router.get("/{dataset_id}")
-async def get_dataset(dataset_id: UUID) -> str:
+@router.get("/{slug}")
+async def get_dataset(slug: Annotated[str, Path(pattern=DATASET_SLUG_REGEX)]) -> str:
     """Return a single dataset by ID."""
-    dataset = load_dataset_element(dataset_id)
+    dataset = load_dataset_element(slug)
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
     return dataset
 
 
-@router.delete("/{dataset_id}", status_code=204)
-async def delete_dataset(dataset_id: UUID) -> None:
+@router.delete("/{slug}", status_code=204)
+async def delete_dataset(slug: Annotated[str, Path(pattern=DATASET_SLUG_REGEX)]) -> None:
     """Delete a dataset and its XML dataset element."""
-    if not dataset_element_exists(dataset_id):
+    if not dataset_element_exists(slug):
         raise HTTPException(status_code=404, detail="Dataset not found")
-    await handlers.delete_dataset(dataset_id)
+    await handlers.delete_dataset(slug)

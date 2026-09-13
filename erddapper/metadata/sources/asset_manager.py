@@ -1,7 +1,7 @@
 """Asset Manager dataset source implementation."""
 
 from asyncio import gather
-from typing import Literal
+from typing import Dict, Literal, Optional
 
 import httpx
 
@@ -9,7 +9,13 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, HttpUrl, ValidationError
 
 from erddapper.metadata.abstract_source import DatasetSource
-from erddapper.models.metadata import AcddGlobalAttributes, SampleFileMetadata
+from erddapper.models.metadata import (
+    AcddGlobalAttributes,
+    DataFileType,
+    ErddapDatasetConfig,
+    SampleFileMetadata,
+    VariableMetadata,
+)
 
 
 class AssetManagerParams(BaseModel):
@@ -31,11 +37,17 @@ class AssetManagerSource(DatasetSource):
     @staticmethod
     async def get_metadata(
         body: AssetManagerParams,
-    ) -> tuple[AcddGlobalAttributes, SampleFileMetadata]:
+    ) -> tuple[
+        DataFileType,
+        AcddGlobalAttributes,
+        Dict[str, VariableMetadata],
+        Optional[ErddapDatasetConfig],
+        Optional[SampleFileMetadata],
+    ]:
         """Fetch asset document metadata from Asset Manager."""
         # TODO: only allow URLs pointing to whitelisted Asset Manager location
         async with httpx.AsyncClient() as client:
-            gobal_meta_resp, file_meta_resp = await gather(
+            global_meta_resp, file_meta_resp = await gather(
                 client.get(str(body.metadata_url)),
                 client.get(str(body.file_meta_url)),
             )
@@ -44,7 +56,7 @@ class AssetManagerSource(DatasetSource):
                 **{
                     k: v
                     for k, v in parse_postgresty_response(
-                        gobal_meta_resp, "ACDD metadata"
+                        global_meta_resp, "ACDD metadata"
                     ).items()
                     if v is not None
                 }
@@ -54,7 +66,8 @@ class AssetManagerSource(DatasetSource):
             )
         except ValidationError as err:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(err))
-        return global_meta, file_meta
+        # FIXME hardcoding csv as filetype for now
+        return "csv", global_meta, file_meta.variable_metadata, None, file_meta
 
 
 def parse_postgresty_response(response: httpx.Response, descriptor: str) -> dict:

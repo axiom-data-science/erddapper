@@ -2,47 +2,53 @@
 
 from pathlib import Path
 from typing import Iterable
-from uuid import UUID
 
 from erddapper.config import SETTINGS
 
 
-def get_dataset_element_path(dataset_id: UUID) -> Path:
+def init_store():
+    """Create dataset_elements_dir on app startup."""
+    SETTINGS.dataset_elements_dir.mkdir(parents=True, exist_ok=True)
+
+
+def get_dataset_element_path(slug: str) -> Path:
     """Return the filesystem path for the dataset element XML file."""
-    return SETTINGS.dataset_elements_dir / f"{dataset_id}.xml"
+    return SETTINGS.dataset_elements_dir / f"{slug}.xml"
 
 
-def dataset_element_exists(dataset_id: UUID) -> bool:
+def dataset_element_exists(slug: str) -> bool:
     """Return True if a dataset element XML file exists for the given dataset."""
-    return get_dataset_element_path(dataset_id).exists()
+    return get_dataset_element_path(slug).exists()
 
 
-def save_dataset_element(dataset_id: UUID, xml: str) -> None:
+def save_dataset_element(slug: str, xml: str) -> None:
     """Persist an XML dataset element for the given dataset."""
-    get_dataset_element_path(dataset_id).write_text(xml, encoding="utf-8")
+    dataset_element_path = get_dataset_element_path(slug)
+    dataset_element_path.parent.mkdir(parents=True, exist_ok=True)
+    dataset_element_path.write_text(xml, encoding="utf-8")
 
 
-def load_dataset_element(dataset_id: UUID) -> str | None:
+def load_dataset_element(slug: str) -> str | None:
     """Load the XML dataset element for the given dataset."""
-    path = get_dataset_element_path(dataset_id)
+    path = get_dataset_element_path(slug)
     if not path.exists():
         return None
     return path.read_text(encoding="utf-8")
 
 
-def delete_dataset_element(dataset_id: UUID) -> None:
+def delete_dataset_element(slug: str) -> None:
     """Delete the XML dataset element for the given dataset, ignoring missing files."""
-    get_dataset_element_path(dataset_id).unlink(missing_ok=True)
+    get_dataset_element_path(slug).unlink(missing_ok=True)
 
 
-def list_dataset_element_ids() -> list[UUID]:
+def list_dataset_element_ids() -> list[str]:
     """Return IDs of all stored dataset elements."""
     path = SETTINGS.dataset_elements_dir
     if not path.exists():
         raise NotADirectoryError(
             f"Configured XML dataset element directory '{path}' does not exist"
         )
-    return [UUID(p.stem) for p in path.glob("*.xml")]
+    return [p.stem for p in path.glob("*.xml")]
 
 
 def load_all_dataset_elements() -> Iterable[str]:
