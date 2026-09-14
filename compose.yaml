@@ -1,0 +1,26 @@
+services:
+  erddap:
+    image: erddap/erddap:v2.31.1
+    ports:
+      - "${ERDDAP_PORT:-8080}:8080"
+    volumes:
+      - erddap_data:/erddapData
+      - ./datasets:/mnt/datasets:ro
+      - ./test-data/ncojson-inline:/data/test:ro
+    environment:
+      ERDDAP_flagKeyKey: "${ERDDAPPER_ERDDAP_FLAG_KEY_KEY:?}"
+      ERDDAP_allowedHosts: "${ERDDAP_ALLOWED_HOSTS:-}"
+
+    configs:
+      - source: symlink_datasets_xml
+        target: /init.d/symlink_datasets_xml.sh
+
+configs:
+  symlink_datasets_xml:
+    content: |
+      #!/bin/sh
+      mkdir -p /datasets
+      ln -sf "/mnt/datasets/datasets.xml" "$${CATALINA_HOME}/content/erddap/datasets.xml"
+
+volumes:
+  erddap_data:
