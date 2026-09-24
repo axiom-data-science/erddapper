@@ -31,4 +31,7 @@ def compose_datasets_xml():
     logger.debug("Refreshing datasets.xml")
     elements = "\n".join(load_all_dataset_elements())
     xml_bytes = DATASETS_TEMPLATE.format(elements=elements).encode("ISO-8859-1")
+    # Check that parent dir exists for extra robustness
+    SETTINGS.datasets_xml_path.parent.mkdir(parents=True, exist_ok=True)
+    # Write output
     SETTINGS.datasets_xml_path.write_bytes(xml_bytes)
