@@ -1,11 +1,16 @@
 """Inline payload dataset source implementation."""
 
-from typing import Literal
+from typing import Annotated, Dict, List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import AnyUrl, BaseModel, BeforeValidator
 
 from erddapper.metadata.abstract_source import DatasetSource
-from erddapper.models.metadata import AcddGlobalAttributes, SampleFileMetadata
+from erddapper.models.metadata import (
+    AcddGlobalAttributes,
+    DataFileType,
+    ErddapDatasetConfig,
+    VariableMetadata,
+)
 
 
 class InlineParams(BaseModel):
@@ -13,7 +18,8 @@ class InlineParams(BaseModel):
 
     source_name: Literal["inline"]
     global_acdd: AcddGlobalAttributes
-    file_meta: SampleFileMetadata
+    variables: Dict[str, VariableMetadata]
+    sample_file_uri: AnyUrl
 
 
 class InlineSource(DatasetSource):
@@ -25,6 +31,106 @@ class InlineSource(DatasetSource):
     @staticmethod
     async def get_metadata(
         body: InlineParams,
-    ) -> tuple[AcddGlobalAttributes, SampleFileMetadata]:
+    ) -> tuple[
+        DataFileType,
+        AcddGlobalAttributes,
+        Dict[str, VariableMetadata],
+        Optional[ErddapDatasetConfig],
+        Optional[AnyUrl],
+    ]:
         """Pass along dataset metadata from the request."""
-        return body.global_acdd, body.file_meta
+        # FIXME hardcoding csv data file type for now
+        return "csv", body.global_acdd, body.variables, None, body.sample_file_uri
+
+
+def convert_to_ncojson_level_1(attributes: dict) -> dict:
+    """Convert verbose ncojson levels (>1) to concise level 1.
+
+    Example: value {"type": "short", "data": [1, 2, 3]}
+    would be converted to [1, 2, 3]
+    """
+
+    if not isinstance(attributes, dict):
+        return attributes
+
+    return {
+        k: v
+        if not isinstance(v, dict)
+        else (
+            v.get("data")
+            if set(v.keys()) == {"data", "type"}
+            else convert_to_ncojson_level_1(v)
+        )
+        for k, v in attributes.items()
+    }
+
+
+class NcoJsonVariable(BaseModel):
+    """ncoJson variable object containing shape (optional), type, and attributes."""
+
+    shape: Optional[List] = None
+    type: str
+    attributes: VariableMetadata
+
+
+def set_variable_source_name_and_data_type(
+    variables: Dict[str, NcoJsonVariable]
+) -> Dict[str, NcoJsonVariable]:
+    """Copy source_name and data_type into var attributes."""
+
+    for var_name, variable in variables.items():
+        if "attributes" in variable:
+            if "source_name" not in variable["attributes"]:
+                variable["attributes"]["source_name"] = var_name
+            if "data_type" not in variable["attributes"] and "type" in variable:
+                # map netcdf data types to erddap types if needed
+                var_type = {
+                    "int64": "long",
+                    "uint64": "ulong",
+                }.get(variable["type"], variable["type"])
+                variable["attributes"]["data_type"] = var_type
+
+    return variables
+
+
+class NcoJsonInlineParams(BaseModel):
+    """Dataset parameters using the inline ncoJson metadata."""
+
+    source_name: Literal["ncojson-inline"]
+    file_type: DataFileType
+    config: Optional[ErddapDatasetConfig] = None
+    attributes: Annotated[
+        AcddGlobalAttributes, BeforeValidator(convert_to_ncojson_level_1)
+    ]
+    variables: Annotated[
+        Dict[str, NcoJsonVariable],
+        BeforeValidator(set_variable_source_name_and_data_type),
+        BeforeValidator(convert_to_ncojson_level_1),
+    ]
+
+
+class NcoJsonInlineSource(DatasetSource):
+    """Inline ncoJson style payload dataset source."""
+
+    SOURCE_NAME = "ncojson-inline"
+    REQUEST_MODEL = NcoJsonInlineParams
+
+    @staticmethod
+    async def get_metadata(
+        body: NcoJsonInlineParams,
+    ) -> tuple[
+        DataFileType,
+        AcddGlobalAttributes,
+        Dict[str, VariableMetadata],
+        Optional[ErddapDatasetConfig],
+        Optional[AnyUrl],
+    ]:
+        """Return metadata from ncojson-inline request payload."""
+
+        return (
+            body.file_type,
+            body.attributes,
+            {k: v.attributes for k, v in body.variables.items()},
+            body.config,
+            None,
+        )

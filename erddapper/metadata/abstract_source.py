@@ -1,11 +1,16 @@
 """Dataset source abstract class definition."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, Generic, Type, TypeVar
+from typing import ClassVar, Dict, Generic, Optional, Type, TypeVar
 
-from pydantic import BaseModel
+from pydantic import AnyUrl, BaseModel
 
-from erddapper.models.metadata import AcddGlobalAttributes, SampleFileMetadata
+from erddapper.models.metadata import (
+    AcddGlobalAttributes,
+    DataFileType,
+    ErddapDatasetConfig,
+    VariableMetadata,
+)
 
 
 class DatasetSourceRequestModel(BaseModel):
@@ -32,6 +37,12 @@ class DatasetSource(ABC, Generic[RequestModel]):
     @abstractmethod
     async def get_metadata(
         body: RequestModel,
-    ) -> tuple[AcddGlobalAttributes, SampleFileMetadata]:
+    ) -> tuple[
+        DataFileType,
+        AcddGlobalAttributes,
+        Dict[str, VariableMetadata],
+        Optional[ErddapDatasetConfig],
+        Optional[AnyUrl],
+    ]:
         """Process request body and return necessary dataset metadata."""
         raise NotImplementedError

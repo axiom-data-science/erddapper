@@ -1,15 +1,20 @@
 """Asset Manager dataset source implementation."""
 
 from asyncio import gather
-from typing import Literal
+from typing import Dict, Literal, Optional
 
 import httpx
 
 from fastapi import HTTPException, status
-from pydantic import BaseModel, Field, HttpUrl, ValidationError
+from pydantic import AnyUrl, BaseModel, Field, HttpUrl, ValidationError, computed_field
 
 from erddapper.metadata.abstract_source import DatasetSource
-from erddapper.models.metadata import AcddGlobalAttributes, SampleFileMetadata
+from erddapper.models.metadata import (
+    AcddGlobalAttributes,
+    DataFileType,
+    ErddapDatasetConfig,
+    VariableMetadata,
+)
 
 
 class AssetManagerParams(BaseModel):
@@ -22,6 +27,19 @@ class AssetManagerParams(BaseModel):
     model_config = {"extra": "ignore"}
 
 
+class SampleFileMetadata(BaseModel):
+    """Description of data file for use with ERDDAP."""
+
+    file_uri: AnyUrl
+    variables: list[VariableMetadata] = Field(validation_alias="headers")
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def variable_metadata(self) -> Dict[str, VariableMetadata]:
+        """Variable metadata by source name."""
+        return {var.source_name: var for var in self.variables}
+
+
 class AssetManagerSource(DatasetSource):
     """Asset Manager dataset source."""
 
@@ -31,11 +49,17 @@ class AssetManagerSource(DatasetSource):
     @staticmethod
     async def get_metadata(
         body: AssetManagerParams,
-    ) -> tuple[AcddGlobalAttributes, SampleFileMetadata]:
+    ) -> tuple[
+        DataFileType,
+        AcddGlobalAttributes,
+        Dict[str, VariableMetadata],
+        Optional[ErddapDatasetConfig],
+        Optional[AnyUrl],
+    ]:
         """Fetch asset document metadata from Asset Manager."""
         # TODO: only allow URLs pointing to whitelisted Asset Manager location
         async with httpx.AsyncClient() as client:
-            gobal_meta_resp, file_meta_resp = await gather(
+            global_meta_resp, file_meta_resp = await gather(
                 client.get(str(body.metadata_url)),
                 client.get(str(body.file_meta_url)),
             )
@@ -44,7 +68,7 @@ class AssetManagerSource(DatasetSource):
                 **{
                     k: v
                     for k, v in parse_postgresty_response(
-                        gobal_meta_resp, "ACDD metadata"
+                        global_meta_resp, "ACDD metadata"
                     ).items()
                     if v is not None
                 }
@@ -53,8 +77,13 @@ class AssetManagerSource(DatasetSource):
                 **parse_postgresty_response(file_meta_resp, "Asset document metadata")
             )
         except ValidationError as err:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(err))
-        return global_meta, file_meta
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                "Failed to retrieve linked metadata",
+            ) from err
+
+        # FIXME hardcoding csv as filetype for now
+        return "csv", global_meta, file_meta.variable_metadata, None, file_meta.file_uri
 
 
 def parse_postgresty_response(response: httpx.Response, descriptor: str) -> dict:
