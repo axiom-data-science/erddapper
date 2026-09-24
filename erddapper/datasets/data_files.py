@@ -3,6 +3,8 @@
 
 import httpx
 
+from fastapi import HTTPException, status
+
 from erddapper.config import SETTINGS
 
 
@@ -27,9 +29,14 @@ async def download_data(slug: str, file_uri: str):
     if not SETTINGS.dataset_data_dir:
         raise NotImplementedError("Data downloads are disabled")
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(file_uri)
-    response.raise_for_status()
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(file_uri)
+        response.raise_for_status()
+    except httpx.HTTPStatusError as err:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Failed to download linked file"
+        ) from err
 
     content_type = response.headers.get("content-type", "").split(";")[0].strip()
     if content_type not in CONTENT_TYPE_MAP:
