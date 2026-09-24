@@ -142,6 +142,13 @@ def generate_dataset_xml(
         else {}
     )
     configs_batch = {
+        # add reloadEveryNMinutes unless specified in dataset config
+        "reloadEveryNMinutes": str(SETTINGS.dataset_reload_freq_min),
+        # add fileNameRegex unless specified in dataset config
+        "fileNameRegex": f".*\\.{file_type}",
+        # add recursive unless specified in dataset config
+        "recursive": "true",
+        # apply the custom overrides
         **extra_dataset_configs,
         # Use specified fileDir config if provided or erddap_datasets_path root if not
         "fileDir": (
@@ -149,12 +156,6 @@ def generate_dataset_xml(
             if dataset_config and dataset_config.fileDir
             else str(SETTINGS.erddap_datasets_path / slug)
         ),
-        # add reloadEveryNMinutes unless specified in dataset config
-        "reloadEveryNMinutes": str(SETTINGS.dataset_reload_freq_min),
-        # add fileNameRegex unless specified in dataset config
-        "fileNameRegex": f".*\\.{file_type}",
-        # add recursive unless specified in dataset config
-        "recursive": "true",
     }
     for key, val in configs_batch:
         if key not in ALLOWED_DATASET_CONFIG:
