@@ -1,6 +1,6 @@
 services:
   erddap:
-    image: erddap/erddap:v2.31.1
+    image: erddap/erddap:alpha-latest
     ports:
       - "${ERDDAP_PORT:-8080}:8080"
     volumes:
