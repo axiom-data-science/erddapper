@@ -19,7 +19,7 @@ class InlineParams(BaseModel):
     source_name: Literal["inline"]
     global_acdd: AcddGlobalAttributes
     variables: Dict[str, VariableMetadata]
-    sample_file_uri: AnyUrl | None = None
+    sample_file_uri: AnyUrl
 
 
 class InlineSource(DatasetSource):
