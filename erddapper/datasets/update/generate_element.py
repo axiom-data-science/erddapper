@@ -74,6 +74,11 @@ ALLOWED_DATASET_CONFIG = [
     "cacheSizeGB",
 ]
 
+ERDDAP_DATASET_TYPES = {
+    "csv": "EDDTableFromAsciiFiles",
+    "nc": "EDDTableFromMultidimNcFiles",
+}
+
 
 def add_variable_xml(dataset_xml: ElementT, var: VariableMetadata):
     """Add variable element with its attributes."""
@@ -116,90 +121,46 @@ def generate_dataset_xml(
 ) -> str:
     """Build an ERDDAP dataset XML dataset element from metadata."""
 
-    erddap_dataset_types = {
-        "csv": "EDDTableFromAsciiFiles",
-        "nc": "EDDTableFromMultidimNcFiles",
-    }
-
-    if file_type not in erddap_dataset_types:
+    if file_type not in ERDDAP_DATASET_TYPES:
         raise ValueError(
             f"Unsupported ERDDAP dataset file type {file_type}, "
-            f"supported types are {', '.join(erddap_dataset_types.keys())}"
+            f"supported types are {', '.join(ERDDAP_DATASET_TYPES.keys())}"
         )
 
     dataset = Element(
         "dataset",
         attrib={
-            "type": erddap_dataset_types[file_type],
+            "type": ERDDAP_DATASET_TYPES[file_type],
             "datasetID": dataset_id,
         },
     )
 
-    seen_config: set[str] = set()
-
-    def add_dataset_config(
-        dataset_id: str, dataset: ElementT, seen_config: set[str], config: str, value: str
-    ):
-        if config in seen_config:
-            return
-
-        if config not in ALLOWED_DATASET_CONFIG:
-            logger.warn(
-                f"Dataset config {config} in {dataset_id} is not allowed, skipping"
-            )
-            return
-
-        create_subelement(dataset, config, value)
-        seen_config.add(config)
-
-    # Use specified fileDir config if provided or erddap_datasets_path root if not
-    add_dataset_config(
-        dataset_id,
-        dataset,
-        seen_config,
-        "fileDir",
-        dataset_config.fileDir
-        if dataset_config and dataset_config.fileDir
-        else str(SETTINGS.erddap_datasets_path / slug),
+    # gather arbitraty erddap dataset config elements from request
+    extra_dataset_configs = (
+        dataset_config.model_extra
+        if dataset_config and dataset_config.model_extra
+        else {}
     )
-
-    # add specified erddap dataset config elements
-    if dataset_config and dataset_config.model_extra:
-        for c in dataset_config.model_extra.keys():
-            add_dataset_config(
-                dataset_id,
-                dataset,
-                seen_config,
-                c,
-                getattr(dataset_config, c),
-            )
-
-    # add reloadEveryNMinutes unless specified in dataset config
-    add_dataset_config(
-        dataset_id,
-        dataset,
-        seen_config,
-        "reloadEveryNMinutes",
-        str(SETTINGS.dataset_reload_freq_min),
-    )
-
-    # add fileNameRegex unless specified in dataset config
-    add_dataset_config(
-        dataset_id,
-        dataset,
-        seen_config,
-        "fileNameRegex",
-        f".*\\.{file_type}",
-    )
-
-    # add recursive unless specified in dataset config
-    add_dataset_config(
-        dataset_id,
-        dataset,
-        seen_config,
-        "recursive",
-        "true",
-    )
+    configs_batch = {
+        **extra_dataset_configs,
+        # Use specified fileDir config if provided or erddap_datasets_path root if not
+        "fileDir": (
+            dataset_config.fileDir
+            if dataset_config and dataset_config.fileDir
+            else str(SETTINGS.erddap_datasets_path / slug)
+        ),
+        # add reloadEveryNMinutes unless specified in dataset config
+        "reloadEveryNMinutes": str(SETTINGS.dataset_reload_freq_min),
+        # add fileNameRegex unless specified in dataset config
+        "fileNameRegex": f".*\\.{file_type}",
+        # add recursive unless specified in dataset config
+        "recursive": "true",
+    }
+    for key, val in configs_batch:
+        if key not in ALLOWED_DATASET_CONFIG:
+            logger.warning(f"Dataset key {key} in {dataset_id} is not allowed, skipping")
+            continue
+        create_subelement(dataset, key, val)
 
     metadata = global_attrs.model_dump()
     # merge ADDITIONAL_ATTRS if they don't exist in metadata

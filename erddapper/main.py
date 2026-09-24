@@ -26,10 +26,10 @@ async def lifespan(app: FastAPI):
     """Service lifespan context manager."""
     setup_logging()
     logger.debug("Logging configured")
-    init_store()
+    init_store()  # element xml fragments
+    init_datasets_xml_dir()  # composed datasets.xml
+    init_dataset_data_dir()  # data files
     compose_datasets_xml()
-    init_datasets_xml_dir()
-    init_dataset_data_dir()
     yield
 
 

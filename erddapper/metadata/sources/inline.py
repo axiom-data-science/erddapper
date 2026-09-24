@@ -79,8 +79,7 @@ def set_variable_source_name_and_data_type(
 ) -> Dict[str, NcoJsonVariable]:
     """Copy source_name and data_type into var attributes."""
 
-    for var_name in variables:
-        variable = variables[var_name]
+    for var_name, variable in variables.items():
         if "attributes" in variable:
             if "source_name" not in variable["attributes"]:
                 variable["attributes"]["source_name"] = var_name

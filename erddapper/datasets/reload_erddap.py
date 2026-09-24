@@ -17,7 +17,7 @@ logger = logging.getLogger("erddapper")
 
 def erddap_flag_key(
     erddap_base_url: HttpUrl,
-    erddap_flag_key_url: HttpUrl,
+    erddap_flag_key_url: HttpUrl | None,
     flag_key_key: str,
     dataset_id: str,
 ):
@@ -29,7 +29,7 @@ def erddap_flag_key(
     return hashlib.sha256(str.encode(phrase)).hexdigest()
 
 
-def redact_flag_key(msg: str) -> str:
+def redact_flag_key(msg: str | httpx.URL) -> str:
     """Redact flagKey secret param from log messages."""
 
     if not msg:

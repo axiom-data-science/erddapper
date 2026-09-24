@@ -48,8 +48,10 @@ def delete_data(slug: str):
         return
 
     dataset_dir = SETTINGS.dataset_data_dir / slug
-    if dataset_dir.is_dir():
-        for data_file in dataset_dir.iterdir():
-            if data_file.is_file():
-                data_file.unlink(missing_ok=True)
-        dataset_dir.rmdir()
+    if not dataset_dir.is_dir():
+        return
+
+    for data_file in dataset_dir.iterdir():
+        if data_file.is_file():
+            data_file.unlink(missing_ok=True)
+    dataset_dir.rmdir()

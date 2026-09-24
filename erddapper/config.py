@@ -61,7 +61,7 @@ class Settings(BaseSettings):
 
     @field_validator("enabled_sources", "allowed_data_paths", mode="before")
     @classmethod
-    def parse_source_list(cls, v):
+    def parse_csv_string(cls, v):
         """Parse input CSV string to list."""
 
         if not isinstance(v, str):

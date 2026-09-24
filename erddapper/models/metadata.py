@@ -1,9 +1,9 @@
 """Dataset metadata models."""
 
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Literal, Optional
+from typing import ClassVar, Dict, List, Literal, Optional
 
-from pydantic import AnyUrl, BaseModel, Field, HttpUrl, field_validator, model_validator
+from pydantic import AnyUrl, BaseModel, Field, HttpUrl, computed_field, field_validator
 
 from erddapper.config import SETTINGS
 
@@ -69,7 +69,7 @@ class VariableMetadata(BaseModel):
     # Mandatory for some variables
     cf_role: Optional[str] = None
     # Mandatory for time variable
-    units: Optional[str] = None
+    units: Optional[str] = Field(default=None, validation_alias="cell_units")
     time_format: Optional[str] = None
     standard_name: Optional[str] = None
     axis: Optional[str] = None
@@ -96,37 +96,13 @@ class SampleFileMetadata(BaseModel):
     """Description of data file for use with ERDDAP."""
 
     file_uri: AnyUrl
-    headers: List[Dict[str, Any]]
-    variable_metadata: Dict[str, VariableMetadata]
+    variables: List[VariableMetadata] = Field(validation_alias="headers")
 
-    @model_validator(mode="before")
-    @classmethod
-    def parse_headers_to_variable_metadata(cls, data: Any) -> Any:
-        """Parse asset_manager headers into Dict[str, VariableMetadata]."""
-
-        if not isinstance(data, dict) or "headers" not in data:
-            return data
-
-        headers = data.get("headers")
-        if not isinstance(headers, list):
-            return data
-
-        var_metas: Dict[str, VariableMetadata] = {}
-
-        # map asset manager variable attributes to standard ncojson/ERDDAP names
-        attr_map = {
-            "cell_header": "source_name",
-            "cell_parameter": "destination_name",
-            "cell_units": "units",
-        }
-        for var in headers:
-            var_meta = VariableMetadata.model_validate(
-                {attr_map.get(k, k): v for k, v in var.items()}
-            )
-            var_metas[var_meta.source_name] = var_meta
-
-        data["variable_metadata"] = var_metas
-        return data
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def variable_metadata(self) -> Dict[str, VariableMetadata]:
+        """Variable metadata by source name."""
+        return {var.source_name: var for var in self.variables}
 
 
 class ErddapDatasetConfig(BaseModel):

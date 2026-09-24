@@ -21,13 +21,12 @@ class FlagKeyLoggingFilter(logging.Filter):
         """Method to filter flagKey secrets from log lines."""
 
         if record.args:
-            args = []
-            for index, arg in enumerate(record.args):
-                if isinstance(arg, URL) and "flagKey=" in str(arg):
-                    args.append(URL(redact_flag_key(arg)))
-                else:
-                    args.append(arg)
-            record.args = tuple(args)
+            record.args = tuple(
+                URL(redact_flag_key(arg))
+                if isinstance(arg, URL) and "flagKey=" in str(arg)
+                else arg
+                for arg in record.args
+            )
         return True
 
 
