@@ -2,14 +2,13 @@
 
 from typing import Annotated, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import AnyUrl, BaseModel, BeforeValidator
 
 from erddapper.metadata.abstract_source import DatasetSource
 from erddapper.models.metadata import (
     AcddGlobalAttributes,
     DataFileType,
     ErddapDatasetConfig,
-    SampleFileMetadata,
     VariableMetadata,
 )
 
@@ -20,7 +19,7 @@ class InlineParams(BaseModel):
     source_name: Literal["inline"]
     global_acdd: AcddGlobalAttributes
     variables: Dict[str, VariableMetadata]
-    sample_file: SampleFileMetadata | None = None
+    sample_file_uri: AnyUrl | None = None
 
 
 class InlineSource(DatasetSource):
@@ -37,11 +36,11 @@ class InlineSource(DatasetSource):
         AcddGlobalAttributes,
         Dict[str, VariableMetadata],
         Optional[ErddapDatasetConfig],
-        Optional[SampleFileMetadata],
+        Optional[AnyUrl],
     ]:
         """Pass along dataset metadata from the request."""
         # FIXME hardcoding csv data file type for now
-        return "csv", body.global_acdd, body.variables, None, body.sample_file
+        return "csv", body.global_acdd, body.variables, None, body.sample_file_uri
 
 
 def convert_to_ncojson_level_1(attributes: dict) -> dict:
@@ -124,7 +123,7 @@ class NcoJsonInlineSource(DatasetSource):
         AcddGlobalAttributes,
         Dict[str, VariableMetadata],
         Optional[ErddapDatasetConfig],
-        Optional[SampleFileMetadata],
+        Optional[AnyUrl],
     ]:
         """Return metadata from ncojson-inline request payload."""
 

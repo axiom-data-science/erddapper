@@ -157,7 +157,7 @@ def generate_dataset_xml(
             else str(SETTINGS.erddap_datasets_path / slug)
         ),
     }
-    for key, val in configs_batch:
+    for key, val in configs_batch.items():
         if key not in ALLOWED_DATASET_CONFIG:
             logger.warning(f"Dataset key {key} in {dataset_id} is not allowed, skipping")
             continue

@@ -6,14 +6,13 @@ from typing import Dict, Literal, Optional
 import httpx
 
 from fastapi import HTTPException, status
-from pydantic import BaseModel, Field, HttpUrl, ValidationError
+from pydantic import AnyUrl, BaseModel, Field, HttpUrl, ValidationError
 
 from erddapper.metadata.abstract_source import DatasetSource
 from erddapper.models.metadata import (
     AcddGlobalAttributes,
     DataFileType,
     ErddapDatasetConfig,
-    SampleFileMetadata,
     VariableMetadata,
 )
 
@@ -42,7 +41,7 @@ class AssetManagerSource(DatasetSource):
         AcddGlobalAttributes,
         Dict[str, VariableMetadata],
         Optional[ErddapDatasetConfig],
-        Optional[SampleFileMetadata],
+        Optional[AnyUrl],
     ]:
         """Fetch asset document metadata from Asset Manager."""
         # TODO: only allow URLs pointing to whitelisted Asset Manager location
@@ -61,13 +60,15 @@ class AssetManagerSource(DatasetSource):
                     if v is not None
                 }
             )
-            file_meta = SampleFileMetadata(
-                **parse_postgresty_response(file_meta_resp, "Asset document metadata")
+            file_meta = parse_postgresty_response(
+                file_meta_resp, "Asset document metadata"
             )
+            variable_metadata = {var.source_name: var for var in file_meta["variables"]}
         except ValidationError as err:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(err))
+
         # FIXME hardcoding csv as filetype for now
-        return "csv", global_meta, file_meta.variable_metadata, None, file_meta
+        return "csv", global_meta, variable_metadata, None, file_meta["file_uri"]
 
 
 def parse_postgresty_response(response: httpx.Response, descriptor: str) -> dict:

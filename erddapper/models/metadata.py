@@ -1,9 +1,9 @@
 """Dataset metadata models."""
 
 from pathlib import Path
-from typing import ClassVar, Dict, List, Literal, Optional
+from typing import ClassVar, Literal, Optional
 
-from pydantic import AnyUrl, BaseModel, Field, HttpUrl, computed_field, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 from erddapper.config import SETTINGS
 
@@ -88,21 +88,6 @@ class VariableMetadata(BaseModel):
             for k, v in self.model_dump().items()
             if k not in self.NON_ATTR_FIELDS and v is not None
         }
-
-
-# TODO: This class is specific to asset-manager.
-#       Should we move it to ./erddapper/metadata/sources/asset_manager.py?
-class SampleFileMetadata(BaseModel):
-    """Description of data file for use with ERDDAP."""
-
-    file_uri: AnyUrl
-    variables: List[VariableMetadata] = Field(validation_alias="headers")
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def variable_metadata(self) -> Dict[str, VariableMetadata]:
-        """Variable metadata by source name."""
-        return {var.source_name: var for var in self.variables}
 
 
 class ErddapDatasetConfig(BaseModel):

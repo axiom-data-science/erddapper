@@ -6,6 +6,7 @@ import re
 from typing import Dict, Optional
 
 from fastapi import HTTPException, status
+from pydantic import AnyUrl
 
 from erddapper.datasets.compose_datasets_xml import compose_datasets_xml
 from erddapper.datasets.data_files import download_data
@@ -16,7 +17,6 @@ from erddapper.models.metadata import (
     AcddGlobalAttributes,
     DataFileType,
     ErddapDatasetConfig,
-    SampleFileMetadata,
     VariableMetadata,
 )
 from erddapper.store import save_dataset_element
@@ -31,7 +31,7 @@ async def update_dataset(
     global_attrs: AcddGlobalAttributes,
     variables: Dict[str, VariableMetadata],
     dataset_config: Optional[ErddapDatasetConfig],
-    sample_file: Optional[SampleFileMetadata],
+    sample_file_uri: Optional[AnyUrl],
 ) -> str:
     """Create or update dataset element and return its ERDDAP dataset ID."""
     # datasetId for ERDDAP
@@ -55,8 +55,8 @@ async def update_dataset(
 
     # download data file if a url is provided
     # TODO should this be a separate method, or not supported at all?
-    if sample_file and sample_file.file_uri:
-        await download_data(slug, str(sample_file.file_uri))
+    if sample_file_uri:
+        await download_data(slug, str(sample_file_uri))
 
     if not variables:
         logger.error(f"Asset {slug} doesn't have variable metadata.")

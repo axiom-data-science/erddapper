@@ -3,13 +3,12 @@
 from abc import ABC, abstractmethod
 from typing import ClassVar, Dict, Generic, Optional, Type, TypeVar
 
-from pydantic import BaseModel
+from pydantic import AnyUrl, BaseModel
 
 from erddapper.models.metadata import (
     AcddGlobalAttributes,
     DataFileType,
     ErddapDatasetConfig,
-    SampleFileMetadata,
     VariableMetadata,
 )
 
@@ -43,7 +42,7 @@ class DatasetSource(ABC, Generic[RequestModel]):
         AcddGlobalAttributes,
         Dict[str, VariableMetadata],
         Optional[ErddapDatasetConfig],
-        Optional[SampleFileMetadata],
+        Optional[AnyUrl],
     ]:
         """Process request body and return necessary dataset metadata."""
         raise NotImplementedError
