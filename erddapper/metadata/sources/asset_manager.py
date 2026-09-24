@@ -6,7 +6,7 @@ from typing import Dict, Literal, Optional
 import httpx
 
 from fastapi import HTTPException, status
-from pydantic import AnyUrl, BaseModel, Field, HttpUrl, ValidationError
+from pydantic import AnyUrl, BaseModel, Field, HttpUrl, ValidationError, computed_field
 
 from erddapper.metadata.abstract_source import DatasetSource
 from erddapper.models.metadata import (
@@ -25,6 +25,19 @@ class AssetManagerParams(BaseModel):
     file_meta_url: HttpUrl = Field(validation_alias="sample_file")
 
     model_config = {"extra": "ignore"}
+
+
+class SampleFileMetadata(BaseModel):
+    """Description of data file for use with ERDDAP."""
+
+    file_uri: AnyUrl
+    variables: list[VariableMetadata] = Field(validation_alias="headers")
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def variable_metadata(self) -> Dict[str, VariableMetadata]:
+        """Variable metadata by source name."""
+        return {var.source_name: var for var in self.variables}
 
 
 class AssetManagerSource(DatasetSource):
@@ -60,15 +73,17 @@ class AssetManagerSource(DatasetSource):
                     if v is not None
                 }
             )
-            file_meta = parse_postgresty_response(
-                file_meta_resp, "Asset document metadata"
+            file_meta = SampleFileMetadata(
+                **parse_postgresty_response(file_meta_resp, "Asset document metadata")
             )
-            variable_metadata = {var.source_name: var for var in file_meta["variables"]}
         except ValidationError as err:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(err))
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                "Failed to retrieve linked metadata",
+            ) from err
 
         # FIXME hardcoding csv as filetype for now
-        return "csv", global_meta, variable_metadata, None, file_meta["file_uri"]
+        return "csv", global_meta, file_meta.variable_metadata, None, file_meta.file_uri
 
 
 def parse_postgresty_response(response: httpx.Response, descriptor: str) -> dict:
