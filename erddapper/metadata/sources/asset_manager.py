@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from pydantic import AnyUrl, BaseModel, Field, HttpUrl, ValidationError, computed_field
 
 from erddapper.metadata.abstract_source import DatasetSource
+from erddapper.metadata.examples import ASSET_MANAGER_REQUEST_EXAMPLE
 from erddapper.models.metadata import (
     AcddGlobalAttributes,
     DataFileType,
@@ -24,7 +25,10 @@ class AssetManagerParams(BaseModel):
     metadata_url: HttpUrl = Field(validation_alias="acdd")
     file_meta_url: HttpUrl = Field(validation_alias="sample_file")
 
-    model_config = {"extra": "ignore"}
+    model_config = {
+        "extra": "ignore",
+        "json_schema_extra": {"examples": [ASSET_MANAGER_REQUEST_EXAMPLE]},
+    }
 
 
 class SampleFileMetadata(BaseModel):
