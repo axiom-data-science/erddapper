@@ -5,6 +5,10 @@ from typing import Annotated, Dict, List, Literal, Optional
 from pydantic import AnyUrl, BaseModel, BeforeValidator
 
 from erddapper.metadata.abstract_source import DatasetSource
+from erddapper.metadata.examples import (
+    INLINE_REQUEST_EXAMPLE,
+    NCOJSON_INLINE_REQUEST_EXAMPLE,
+)
 from erddapper.models.metadata import (
     AcddGlobalAttributes,
     DataFileType,
@@ -20,6 +24,8 @@ class InlineParams(BaseModel):
     global_acdd: AcddGlobalAttributes
     variables: Dict[str, VariableMetadata]
     sample_file_uri: AnyUrl
+
+    model_config = {"json_schema_extra": {"examples": [INLINE_REQUEST_EXAMPLE]}}
 
 
 class InlineSource(DatasetSource):
@@ -107,6 +113,8 @@ class NcoJsonInlineParams(BaseModel):
         BeforeValidator(set_variable_source_name_and_data_type),
         BeforeValidator(convert_to_ncojson_level_1),
     ]
+
+    model_config = {"json_schema_extra": {"examples": [NCOJSON_INLINE_REQUEST_EXAMPLE]}}
 
 
 class NcoJsonInlineSource(DatasetSource):
