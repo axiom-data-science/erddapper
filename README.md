@@ -114,6 +114,6 @@ This package was created with [Cookiecutter](https://github.com/audreyr/cookiecu
 ## Technical TODOs
 1. Correct async/blocking HTTP and add timeouts/status handling.
 2. Make storage and datasets.xml writes atomic and concurrency-safe.
-3. Add end-to-end tests around create/update/delete and both metadata sources.
+3. Add end-to-end tests around create/update/delete.
 4. Move settings/source initialization into controlled application startup.
 5. Make SSRF protection and CORS configuration explicit before deployment.
