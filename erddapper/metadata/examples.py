@@ -46,6 +46,23 @@ NCOJSON_INLINE_REQUEST_EXAMPLE = {
     },
 }
 
+NCOJSON_INLINE_REQUEST_MINIMAL_ATTRS_EXAMPLE = {
+    "source_name": "ncojson-inline",
+    "file_type": "nc",
+    "attributes": {
+        "id": "ncojson-minimal-test",
+    },
+    "variables": {
+        "time": {
+            "type": "double",
+            "attributes": {
+                "units": {"type": "char", "data": "seconds since 1970-01-01T00:00:00Z"},
+                "time_format": {"type": "char", "data": "yyyy-MM-dd'T'HH:mm:ss'Z'"},
+            },
+        }
+    },
+}
+
 ASSET_MANAGER_REQUEST_EXAMPLE = {
     "source_name": "asset-manager",
     "acdd": "https://metadata.example.com/global",

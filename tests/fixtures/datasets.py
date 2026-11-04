@@ -1,5 +1,9 @@
 """Dataset creation test fixtures."""
 
+import json
+
+from typing import Optional
+
 import pytest
 
 
@@ -27,9 +31,10 @@ def patch_dataset_side_effects(monkeypatch):
 def assert_dataset_creation(client, patch_dataset_side_effects):
     """Return helper for asserting successful dataset creation."""
 
-    def assert_created(payload, slug, dataset_id, download_uri=None):
+    def assert_created(
+        payload, slug, dataset_id, download_uri=None, atts: Optional[dict] = None
+    ):
         response = client.post(f"/datasets/{slug}", json=payload)
-
         assert response.status_code == 200
         assert response.json() == {
             "slug": slug,
@@ -39,6 +44,13 @@ def assert_dataset_creation(client, patch_dataset_side_effects):
         expected_downloads = [(slug, download_uri)] if download_uri is not None else []
         assert downloaded == expected_downloads
         assert reloaded == [dataset_id]
-        assert client.get(f"/datasets/{slug}").status_code == 200
+
+        get_response = client.get(f"/datasets/{slug}")
+        assert get_response.status_code == 200
+        dataset_xml = json.loads(get_response.text)
+
+        if atts:
+            for att_name, att_value in atts.items():
+                assert f'<att name="{att_name}">{att_value}</att>' in dataset_xml
 
     return assert_created

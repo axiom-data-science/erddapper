@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import ClassVar, Literal, Optional
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
 from erddapper.config import SETTINGS
 
@@ -18,6 +18,9 @@ DataFileType = Literal["csv", "nc"]
 # Allowed characters for dataset slug
 DATASET_SLUG_REGEX = r"^[A-Za-z0-9_-]+$"
 
+PLACEHOLDER_INSTITUTION = "Unknown"
+PLACEHOLDER_INFO_URL = "https://placeholder.invalid/"
+PLACEHOLDER_SOURCE_URL = "https://placeholder.invalid/"
 
 # TODO: we need to get latitude and longitude from somewhere
 # (used to add computed lon/lat variables)
@@ -27,12 +30,12 @@ class AcddGlobalAttributes(BaseModel):
     """ACDD metadata for ERDDAP dataset's global attributes."""
 
     id: str = Field(pattern=DATASET_SLUG_REGEX)
-    # FIXME: temporarily add placeholder defaults for required stuff
-    title: str = "PLACEHOLDER FOR DEMO"
-    summary: str = "PLACEHOLDER FOR DEMO"
-    institution: str = "PLACEHOLDER FOR DEMO"
-    infoUrl: HttpUrl = HttpUrl("http://PLACEHOLDERFORDEMO.com")
-    sourceUrl: HttpUrl = HttpUrl("http://PLACEHOLDERFORDEMO.com")
+    # temporarily add placeholder defaults for required stuff
+    title: str | None = None
+    summary: str | None = None
+    institution: str = PLACEHOLDER_INSTITUTION
+    infoUrl: HttpUrl = HttpUrl(PLACEHOLDER_INFO_URL)
+    sourceUrl: HttpUrl = HttpUrl(PLACEHOLDER_SOURCE_URL)
     cdm_data_type: CdmDataType = "TimeSeries"
     featureType: FeatureType = "TimeSeries"
     cdm_timeseries_variables: str = "longitude,latitude,station"
@@ -40,6 +43,15 @@ class AcddGlobalAttributes(BaseModel):
     model_config = {
         "extra": "allow",  # allow other arbitrary attributes
     }
+
+    @model_validator(mode="after")
+    def set_fallback_values(self):
+        """Set title and summary to dataset id if no values were provided"""
+        if self.title is None:
+            self.title = self.id
+        if self.summary is None:
+            self.summary = self.id
+        return self
 
 
 class VariableMetadata(BaseModel):
